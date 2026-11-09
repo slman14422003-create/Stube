@@ -1,0 +1,22 @@
+{
+  "v": 1,
+  "shorts": [
+    "ytm-reel-shelf-renderer",
+    "ytm-shorts-lockup-view-model",
+    "ytm-shorts-lockup-view-model-v2",
+    "ytm-pivot-bar-item-renderer.pivot-shorts"
+  ],
+  "shortsHas": [
+    "ytm-rich-section-renderer:has(ytm-shorts-lockup-view-model)",
+    "ytm-rich-section-renderer:has(ytm-reel-shelf-renderer)",
+    "ytm-pivot-bar-item-renderer:has(.pivot-shorts)",
+    "ytm-pivot-bar-item-renderer:has(a[href^=\"/shorts\"])"
+  ],
+  "focus": [
+    "ytm-comments-entry-point-header-renderer",
+    "ytm-item-section-renderer[section-identifier=\"comments-entry-point\"]",
+    "ytm-item-section-renderer[section-identifier=\"related-items\"]",
+    "ytm-related-chip-cloud-renderer",
+    "ytm-watch-next-secondary-results-renderer"
+  ]
+}

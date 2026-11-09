@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:width="288dp" android:height="288dp" android:viewportWidth="288" android:viewportHeight="288">
+    <group android:name="disc" android:pivotX="144" android:pivotY="144">
+        <path android:pathData="M144,144m-84,0a84,84 0,1 1,168 0a84,84 0,1 1,-168 0">
+            <aapt:attr name="android:fillColor">
+                <gradient android:type="linear" android:startX="75.3" android:startY="60.0" android:endX="212.7" android:endY="228.0">
+                    <item android:offset="0" android:color="#FF62CCFB"/>
+                    <item android:offset="1" android:color="#FF006FE6"/>
+                </gradient>
+            </aapt:attr>
+        </path>
+        <path android:name="ticks_major" android:pathData="M144.00,65.60 L144.00,76.29 M222.40,144.00 L211.71,144.00 M144.00,222.40 L144.00,211.71 M65.60,144.00 L76.29,144.00" android:strokeColor="#FFFFFFFF" android:strokeWidth="4.3" android:strokeLineCap="round" android:trimPathEnd="1"/>
+        <path android:name="ticks_minor" android:pathData="M183.20,76.11 L179.89,81.84 M211.89,104.80 L206.16,108.11 M211.89,183.20 L206.16,179.89 M183.20,211.89 L179.89,206.16 M104.80,211.89 L108.11,206.16 M76.11,183.20 L81.84,179.89 M104.80,76.11 L108.11,81.84 M76.11,104.80 L81.84,108.11" android:strokeColor="#CCFFFFFF" android:strokeWidth="2.8" android:strokeLineCap="round" android:trimPathEnd="1"/>
+    </group>
+    <group android:name="needle" android:pivotX="144" android:pivotY="144">
+        <path android:name="needle_red" android:pathData="M200.00,88.00 L154.79,154.79 L133.21,133.21 Z" android:fillColor="#FFE43B32"/>
+        <path android:name="needle_white" android:pathData="M88.00,200.00 L154.79,154.79 L133.21,133.21 Z" android:fillColor="#FFF2F2F2"/>
+    </group>
+</vector>

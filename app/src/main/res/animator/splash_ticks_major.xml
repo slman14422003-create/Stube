@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android" android:duration="1000">
+    <propertyValuesHolder android:propertyName="trimPathEnd" android:valueType="floatType">
+        <keyframe android:fraction="0" android:value="0"/>
+        <keyframe android:fraction="0.10" android:value="0"/>
+        <keyframe android:fraction="0.52" android:value="1" android:interpolator="@interpolator/nova_emphasized"/>
+        <keyframe android:fraction="1" android:value="1"/>
+    </propertyValuesHolder>
+</objectAnimator>

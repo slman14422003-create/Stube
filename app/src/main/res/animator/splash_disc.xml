@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android" android:ordering="together">
+    <objectAnimator android:duration="1000">
+        <propertyValuesHolder android:propertyName="scaleX" android:valueType="floatType">
+            <keyframe android:fraction="0" android:value="0.4"/>
+            <keyframe android:fraction="0.55" android:value="1" android:interpolator="@interpolator/nova_pop"/>
+            <keyframe android:fraction="1" android:value="1"/>
+        </propertyValuesHolder>
+    </objectAnimator>
+    <objectAnimator android:duration="1000">
+        <propertyValuesHolder android:propertyName="scaleY" android:valueType="floatType">
+            <keyframe android:fraction="0" android:value="0.4"/>
+            <keyframe android:fraction="0.55" android:value="1" android:interpolator="@interpolator/nova_pop"/>
+            <keyframe android:fraction="1" android:value="1"/>
+        </propertyValuesHolder>
+    </objectAnimator>
+</set>

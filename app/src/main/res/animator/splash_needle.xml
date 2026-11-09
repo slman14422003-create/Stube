@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android" android:duration="1000">
+    <propertyValuesHolder android:propertyName="rotation" android:valueType="floatType">
+        <keyframe android:fraction="0" android:value="-160"/>
+        <keyframe android:fraction="0.16" android:value="-160"/>
+        <keyframe android:fraction="0.62" android:value="16" android:interpolator="@interpolator/nova_emphasized"/>
+        <keyframe android:fraction="0.80" android:value="-6" android:interpolator="@android:interpolator/accelerate_decelerate"/>
+        <keyframe android:fraction="0.92" android:value="2.5" android:interpolator="@android:interpolator/accelerate_decelerate"/>
+        <keyframe android:fraction="1" android:value="0" android:interpolator="@android:interpolator/accelerate_decelerate"/>
+    </propertyValuesHolder>
+</objectAnimator>

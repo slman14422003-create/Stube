@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="smart_summarize">Summarize page</string>
+    <string name="smart_ask_page">Ask AI about this page</string>
+    <string name="smart_summary_title">Summary</string>
+    <string name="smart_read_time">%1$d min read</string>
+    <string name="smart_keywords">Key topics: %1$s</string>
+    <string name="smart_copy">Copy</string>
+    <string name="smart_close">Close</string>
+    <string name="smart_ask_ai">Ask AI</string>
+    <string name="smart_translate">Translate</string>
+    <string name="smart_summarize_text">Summarize</string>
+    <string name="smart_search">Search</string>
+    <string name="smart_no_summary">Not enough text to summarize on this page</string>
+    <string name="smart_on_device">The summary is generated on your device and nothing is sent</string>
+    <string name="smart_sent_to_google">The question will be sent to Google AI Mode</string>
+    <string name="smart_sent_translate">The selected text will be sent to Google Translate</string>
+    <string name="smart_close_dups">Close duplicate tabs</string>
+    <string name="smart_dups_none">No duplicate tabs</string>
+    <string name="smart_dups_closed">%1$d duplicate tabs closed</string>
+    <string name="smart_settings_title">Smart assistant</string>
+    <string name="smart_settings_sub">Page summary, text selection actions, instant answers and adaptive loading</string>
+    <string name="x_zoom_title">Always allow pinch zoom</string>
+    <string name="x_zoom_sub">Overrides sites that disable zooming (applies to new tabs)</string>
+    <string name="x_copy_title">Unlock text selection and copy</string>
+    <string name="x_copy_sub">Lets you select and copy text on pages that block it (applies to new tabs)</string>
+    <string name="x_draft_title">Draft rescue</string>
+    <string name="x_draft_sub">Keeps long text typed in text boxes for 30 minutes if the page reloads or closes (applies to new tabs)</string>
+</resources>

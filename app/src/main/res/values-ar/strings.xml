@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="smart_summarize">تلخيص الصفحة</string>
+    <string name="smart_ask_page">اسأل الذكاء الاصطناعي عن الصفحة</string>
+    <string name="smart_summary_title">الملخص</string>
+    <string name="smart_read_time">قراءة %1$d د</string>
+    <string name="smart_keywords">المواضيع الرئيسية: %1$s</string>
+    <string name="smart_copy">نسخ</string>
+    <string name="smart_close">إغلاق</string>
+    <string name="smart_ask_ai">اسأل الذكاء الاصطناعي</string>
+    <string name="smart_translate">ترجمة</string>
+    <string name="smart_summarize_text">تلخيص</string>
+    <string name="smart_search">بحث</string>
+    <string name="smart_no_summary">لا يوجد نص كافٍ للتلخيص في هذه الصفحة</string>
+    <string name="smart_on_device">يُنشأ الملخص على جهازك دون إرسال أي بيانات</string>
+    <string name="smart_sent_to_google">سيُرسل السؤال إلى وضع الذكاء الاصطناعي من Google</string>
+    <string name="smart_sent_translate">سيُرسل النص المحدد إلى مترجم Google</string>
+    <string name="smart_close_dups">إغلاق التبويبات المكررة</string>
+    <string name="smart_dups_none">لا توجد تبويبات مكررة</string>
+    <string name="smart_dups_closed">أُغلق %1$d من التبويبات المكررة</string>
+    <string name="smart_settings_title">المساعد الذكي</string>
+    <string name="smart_settings_sub">تلخيص الصفحات وإجراءات النص المحدد والإجابات الفورية والتحميل التكيفي</string>
+    <string name="x_zoom_title">السماح بالتكبير دائماً</string>
+    <string name="x_zoom_sub">يتجاوز المواقع التي تمنع التكبير بالإصبعين (يُطبَّق على التبويبات الجديدة)</string>
+    <string name="x_copy_title">فتح تحديد النص ونسخه</string>
+    <string name="x_copy_sub">يتيح تحديد النص ونسخه في الصفحات التي تمنعه (يُطبَّق على التبويبات الجديدة)</string>
+    <string name="x_draft_title">إنقاذ المسودات</string>
+    <string name="x_draft_sub">يحفظ النصوص الطويلة المكتوبة في مربعات النص لمدة 30 دقيقة إن أُعيد تحميل الصفحة أو أُغلقت (يُطبَّق على التبويبات الجديدة)</string>
+</resources>

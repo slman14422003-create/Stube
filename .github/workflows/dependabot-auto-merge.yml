@@ -1,0 +1,31 @@
+name: دمج تلقائي لتحديثات Dependabot
+
+on:
+  pull_request_target:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: بيانات التحديث
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # دمج تلقائي لتحديثات patch/minor فقط بعد نجاح فحوصات CI (build.yml)؛
+      # تحديثات major (قد تكسر التوافق) تبقى تنتظر مراجعة يدوية
+      - name: الموافقة والدمج التلقائي
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+        run: |
+          gh pr review --approve "$PR_URL"
+          gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

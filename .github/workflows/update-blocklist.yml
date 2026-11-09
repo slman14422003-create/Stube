@@ -1,0 +1,34 @@
+name: تحديث قائمة الحجب
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 1 * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: تنزيل وتحويل
+        run: |
+          set -e
+          F=tools/src/blocklist.txt
+          mkdir -p /tmp/bl
+          curl -fsSL https://raw.githubusercontent.com/easylist/easylist/master/easylist/easylist_adservers.txt -o /tmp/bl/a.txt
+          curl -fsSL https://raw.githubusercontent.com/easylist/easylist/master/easyprivacy/easyprivacy_trackingservers.txt -o /tmp/bl/b.txt
+          cat /tmp/bl/a.txt /tmp/bl/b.txt | grep -oE '^\|\|[a-z0-9.-]+\^' | sed -E 's/^\|\|//; s/\^$//' | grep -E '\.' | head -n 8000 > /tmp/bl/new.txt
+          cat "$F" /tmp/bl/new.txt | tr 'A-Z' 'a-z' | awk 'NF && !seen[$0]++' > /tmp/bl/all.txt
+          cp /tmp/bl/all.txt "$F"
+          wc -l "$F"
+      - name: حفظ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/src/blocklist.txt
+          git diff --cached --quiet || git commit -m "تحديث قائمة الحجب"
+          git push

@@ -1,0 +1,101 @@
+name: صيانة تلقائية
+
+# إصدار تلقائي كل 15 يوماً + فحص أمني للتبعيات + رسم بياني للتبعيات (يُفعّل تنبيهات Dependabot الأمنية)
+on:
+  schedule:
+    - cron: '0 3 1,16 * *'   # 03:00 UTC في اليوم 1 و16 من كل شهر ≈ كل 15 يوماً
+  push:
+    branches: [main, master]
+    paths: ['**/build.gradle.kts', 'gradle.properties']
+  workflow_dispatch: {}
+
+concurrency:
+  group: maintenance-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # رسم بياني للتبعيات على GitHub كي تعمل تنبيهات الأمان (Dependabot alerts) على النسخ الفعلية المحلولة من المكتبات، لا المعلنة فقط
+  dependency-graph:
+    name: رسم بياني للتبعيات
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: 25 }
+      - uses: gradle/actions/dependency-submission@v4
+        with: { gradle-version: '9.4.1' }
+
+  # فحص أمني لملفات الاعتمادية بحثاً عن ثغرات معروفة (CVE)، والنتائج تظهر في تبويب Security
+  security-audit:
+    name: فحص أمني للتبعيات
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: فحص الثغرات (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          format: sarif
+          output: trivy-results.sarif
+          exit-code: '0'
+      - uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with: { sarif_file: trivy-results.sarif }
+
+  # إصدار تلقائي كل 15 يوماً: ينشئ وسماً جديداً فقط إن وُجدت التزامات جديدة منذ آخر وسم،
+  # دفع الوسم يُشغّل workflow الإصدار الحالي (release.yml) تلقائياً فيبني ويوقّع وينشر APK/AAB
+  auto-release:
+    name: إصدار تلقائي (كل 15 يوماً)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: تحديد الإصدار التالي
+        id: ver
+        run: |
+          git fetch --tags --force
+          LAST=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+          if [ -z "$LAST" ]; then LAST="v1.8.1"; fi
+          COUNT=$(git rev-list "${LAST}..HEAD" --count 2>/dev/null || echo 0)
+          echo "last=$LAST" >> "$GITHUB_OUTPUT"
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            V="${LAST#v}"
+            MAJOR=$(echo "$V" | cut -d. -f1); MINOR=$(echo "$V" | cut -d. -f2); PATCH=$(echo "$V" | cut -d. -f3)
+            NEXT="v${MAJOR}.${MINOR}.$((PATCH + 1))"
+            echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: إنشاء الوسم ودفعه
+        if: steps.ver.outputs.skip == 'false'
+        run: |
+          git tag "${{ steps.ver.outputs.next }}"
+          git push origin "${{ steps.ver.outputs.next }}"
+
+      - name: ملخص
+        if: always()
+        run: |
+          if [ "${{ steps.ver.outputs.skip }}" = "true" ]; then
+            echo "## لا إصدار جديد" >> "$GITHUB_STEP_SUMMARY"
+            echo "لا التزامات جديدة منذ \`${{ steps.ver.outputs.last }}\` — تم تخطي الإصدار." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## أُنشئ إصدار جديد" >> "$GITHUB_STEP_SUMMARY"
+            echo "الوسم \`${{ steps.ver.outputs.next }}\` (${{ steps.ver.outputs.count }} التزام جديد منذ \`${{ steps.ver.outputs.last }}\`) — سيبدأ workflow الإصدار تلقائياً خلال دقائق." >> "$GITHUB_STEP_SUMMARY"
+          fi
