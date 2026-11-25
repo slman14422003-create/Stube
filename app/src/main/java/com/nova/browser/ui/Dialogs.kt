@@ -31,9 +31,10 @@ private fun AlertBtn(text: String, color: Color, bold: Boolean, enabled: Boolean
     val ios = LocalIos.current
     val src = remember { MutableInteractionSource() }
     val pressed by src.collectIsPressedAsState()
+    val haptics = rememberHaptics()
     Box(
         modifier.height(44.dp).background(if (pressed) ios.fill2 else Color.Transparent).alpha(if (enabled) 1f else 0.4f)
-            .clickable(interactionSource = src, indication = null, enabled = enabled, onClick = onClick),
+            .clickable(interactionSource = src, indication = null, enabled = enabled, onClick = { haptics.tick(); onClick() }),
         contentAlignment = Alignment.Center
     ) {
         Text(text, style = MaterialTheme.typography.bodyLarge, fontWeight = if (bold) FontWeight.SemiBold else FontWeight.Normal, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(horizontal = 8.dp))

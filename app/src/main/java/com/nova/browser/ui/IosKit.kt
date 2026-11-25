@@ -185,7 +185,7 @@ fun IosIcon(kind: IosGlyph, tint: Color, size: Dp = 24.dp, modifier: Modifier = 
 @Composable
 fun IosSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)? = null, modifier: Modifier = Modifier) {
     val ios = LocalIos.current
-    val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+    val haptics = rememberHaptics()
     val src = remember { MutableInteractionSource() }
     val down by src.collectIsPressedAsState()
     val thumbW by animateDpAsState(
@@ -200,7 +200,7 @@ fun IosSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)? = null, mo
         modifier.size(width = 64.dp, height = 28.dp).clip(CircleShape).background(track)
             .then(
                 if (onCheckedChange != null) Modifier.clickable(interactionSource = src, indication = null) {
-                    runCatching { haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove) }
+                    haptics.toggle(!checked)
                     onCheckedChange(!checked)
                 } else Modifier
             )

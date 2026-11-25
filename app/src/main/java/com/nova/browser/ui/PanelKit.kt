@@ -107,6 +107,7 @@ fun IosField(
 @Composable
 fun PanelSegments(items: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val ios = LocalIos.current
+    val haptics = rememberHaptics()
     Row(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).height(32.dp).clip(RoundedCornerShape(9.dp)).background(ios.fill3).padding(2.dp),
         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -117,7 +118,7 @@ fun PanelSegments(items: List<String>, selected: Int, onSelect: (Int) -> Unit) {
             Box(
                 Modifier.weight(1f).fillMaxHeight().then(if (on) Modifier.shadow(1.dp, RoundedCornerShape(7.dp)) else Modifier)
                     .clip(RoundedCornerShape(7.dp)).background(bg)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(i) },
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { if (!on) haptics.segment(); onSelect(i) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(t, maxLines = 1, overflow = TextOverflow.Ellipsis, fontSize = 13.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium, color = ios.label, modifier = Modifier.padding(horizontal = 4.dp))
@@ -129,12 +130,13 @@ fun PanelSegments(items: List<String>, selected: Int, onSelect: (Int) -> Unit) {
 @Composable
 fun PanelChips(items: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val ios = LocalIos.current
+    val haptics = rememberHaptics()
     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items.forEachIndexed { i, t ->
             val on = i == selected
             Box(
                 Modifier.height(32.dp).clip(CircleShape).background(if (on) ios.blue else ios.fill3)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { onSelect(i) }.padding(horizontal = 14.dp),
+                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { if (!on) haptics.tick(); onSelect(i) }.padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
             ) { Text(t, style = MaterialTheme.typography.bodyMedium, color = if (on) Color.White else ios.label, maxLines = 1) }
         }

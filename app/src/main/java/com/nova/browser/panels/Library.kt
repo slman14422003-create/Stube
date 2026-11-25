@@ -213,15 +213,19 @@ fun LibraryScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
             } else if (tab == 0) {
                 LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(0.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
                     itemsIndexed(bms, key = { i, b -> b.url + i }) { i, b ->
-                        ListRow(groupShape(i, bms.size), b.title, if (b.folder.isBlank()) hostOf(b.url) else b.folder + " • " + hostOf(b.url), { onOpen(b.url) },
-                            trailing = { ItemMenu(b.url, b.title, false, { onOpen(b.url) }, { Library.removeBookmark(b) }) }) { SiteIcon(b.url, Icons.Default.Star) }
+                        SwipeDeleteRow(groupShape(i, bms.size), { Library.removeBookmark(b) }) {
+                            ListRow(groupShape(i, bms.size), b.title, if (b.folder.isBlank()) hostOf(b.url) else b.folder + " • " + hostOf(b.url), { onOpen(b.url) },
+                                trailing = { ItemMenu(b.url, b.title, false, { onOpen(b.url) }, { Library.removeBookmark(b) }) }) { SiteIcon(b.url, Icons.Default.Star) }
+                        }
                     }
                 }
             } else if (tab == 2) {
                 LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(0.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
                     itemsIndexed(rds, key = { i, b -> b.url + i }) { i, b ->
-                        ListRow(groupShape(i, rds.size), b.title, hostOf(b.url), { onOpen(b.url) },
-                            trailing = { ItemMenu(b.url, b.title, false, { onOpen(b.url) }, { Library.removeReading(b) }) }) { SiteIcon(b.url, Icons.Default.Info) }
+                        SwipeDeleteRow(groupShape(i, rds.size), { Library.removeReading(b) }) {
+                            ListRow(groupShape(i, rds.size), b.title, hostOf(b.url), { onOpen(b.url) },
+                                trailing = { ItemMenu(b.url, b.title, false, { onOpen(b.url) }, { Library.removeReading(b) }) }) { SiteIcon(b.url, Icons.Default.Info) }
+                        }
                     }
                 }
             } else {
@@ -232,8 +236,10 @@ fun LibraryScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
                                 modifier = Modifier.padding(start = 4.dp, top = 22.dp, bottom = 8.dp))
                         } else {
                             val h = r.item!!
-                            ListRow(groupShape(r.idx, r.n), h.title, hostOf(h.url) + " • " + timeFmt.format(java.util.Date(h.time)), { onOpen(h.url) },
-                                trailing = { ItemMenu(h.url, h.title, true, { onOpen(h.url) }, { Library.removeHistory(h) }) }) { SiteIcon(h.url, Icons.Default.Refresh) }
+                            SwipeDeleteRow(groupShape(r.idx, r.n), { Library.removeHistory(h) }) {
+                                ListRow(groupShape(r.idx, r.n), h.title, hostOf(h.url) + " • " + timeFmt.format(java.util.Date(h.time)), { onOpen(h.url) },
+                                    trailing = { ItemMenu(h.url, h.title, true, { onOpen(h.url) }, { Library.removeHistory(h) }) }) { SiteIcon(h.url, Icons.Default.Refresh) }
+                            }
                         }
                     }
                 }
