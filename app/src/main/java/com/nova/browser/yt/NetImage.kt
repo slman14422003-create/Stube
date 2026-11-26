@@ -1,41 +1,33 @@
 package com.nova.browser
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.net.URL
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 
-private val netImageCache = object : android.util.LruCache<String, Bitmap>(24) {}
-
-/** تحميل صورة من الشبكة بدون مكتبات خارجية (مع كاش بسيط في الذاكرة). */
+/** Remote image decoded for its on-screen size (see ImageLoader). [modifier] must define the size. */
 @Composable
 fun NetImage(url: String, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop) {
-    var bmp by remember(url) { mutableStateOf(netImageCache.get(url)) }
-    LaunchedEffect(url) {
-        if (bmp == null) {
-            bmp = withContext(Work.netD) {
-                runCatching {
-                    val c = URL(url).openConnection().apply { connectTimeout = 8000; readTimeout = 8000 }
-                    c.getInputStream().use { BitmapFactory.decodeStream(it) }
-                }.getOrNull()?.also { netImageCache.put(url, it) }
-            }
-        }
+    var size by remember { mutableStateOf(IntSize.Zero) }
+    var bmp by remember(url) { mutableStateOf(ImageLoader.cached(url)) }
+    LaunchedEffect(url, size) {
+        if (size.width > 0 && size.height > 0) ImageLoader.load(url, size.width, size.height)?.let { bmp = it }
     }
-    val b = bmp
-    if (b != null) Image(remember(b) { b.asImageBitmap() }, null, modifier, contentScale = contentScale)
-    else Box(modifier.background(Color(0x22888888)))
+    Box(modifier.onSizeChanged { size = it }) {
+        val b = bmp
+        if (b != null) Image(remember(b) { b.asImageBitmap() }, null, Modifier.fillMaxSize(), contentScale = contentScale)
+        else Box(Modifier.fillMaxSize().background(Color(0x22888888)))
+    }
 }

@@ -18,3 +18,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Stube"
 include(":app")
+include(":benchmark")

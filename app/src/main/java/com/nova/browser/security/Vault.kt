@@ -11,7 +11,10 @@ import android.os.CancellationSignal
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.KeyStore
@@ -35,12 +38,15 @@ object Vault {
     private lateinit var sp: SharedPreferences
     private var inited = false
     val items = mutableStateListOf<Cred>()
+    /** UI only: false until the first decrypt attempt has finished. */
+    var loaded by mutableStateOf(false); private set
 
     fun init(c: Context) {
         if (inited) return
         inited = true
         sp = c.applicationContext.getSharedPreferences("vault", Context.MODE_PRIVATE)
         load()
+        loaded = true
     }
 
     // ───────────── التشفير ─────────────

@@ -370,9 +370,8 @@ fun YtDownloadSheet(url: String, onDismiss: () -> Unit, onStarted: () -> Unit) {
                     }
                 }
                 i == null -> {
-                    Spacer(Modifier.height(20.dp))
-                    NovaLoadingRow(L("جارٍ جلب الصيغ المتاحة…"))
-                    Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(16.dp))
+                    SkeletonList(rows = 4, caption = L("جارٍ جلب الصيغ المتاحة…"))
                 }
                 else -> {
                     if (i.videos.isEmpty() && i.audios.isEmpty()) {

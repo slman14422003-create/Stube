@@ -9,6 +9,7 @@ class NovaApp : Application() {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        ImageLoader.init(this)
     }
 
     companion object {

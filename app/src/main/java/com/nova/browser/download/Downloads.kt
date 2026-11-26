@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedScroll.nestedScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -249,9 +250,10 @@ fun DownloadsScreen(onBack: () -> Unit) {
     val doneBytes = all.filter(isDone).sumOf { if (it.total > 0) it.total else it.downloaded }
     val subtitle = if (all.isEmpty()) null else all.size.toString() + " " + L("ملف") + " • " + fmtSize(doneBytes)
 
+    val ct = rememberCollapsingTitle()
     Surface(Modifier.fillMaxSize(), color = ios.groupedBg) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            PanelTopBar(L("التنزيلات"), subtitle, onBack) {
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().nestedScroll(ct.connection)) {
+            PanelTopBar(L("التنزيلات"), subtitle, onBack, ct) {
                 if (all.isNotEmpty()) PanelMenu { close ->
                     if (nRun > 0) DropdownMenuItem(text = { Text(L("إيقاف الكل")) }, leadingIcon = { IosIcon(IosGlyph.Pause, ios.label) }, onClick = { close(); Downloader.pauseAll() })
                     if (nStop > 0) DropdownMenuItem(text = { Text(L("استئناف الكل")) }, leadingIcon = { IosIcon(IosGlyph.Play, ios.label) },
@@ -275,7 +277,7 @@ fun DownloadsScreen(onBack: () -> Unit) {
                 if (list.isEmpty()) PanelEmpty(Icons.Default.Search, L("لا نتائج"), modifier = Modifier.weight(1f).fillMaxWidth())
                 else LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (nRun > 0 && filter != 2 && q.isBlank()) item(key = "summary") { ActiveSummary(running) }
-                    items(list, key = { it.id }) { DownloadCard(it, Modifier.animateItem()) }
+                    items(list, key = { it.id }) { DownloadCard(it, if (Adaptive.ms(100) > 0) Modifier.animateItem() else Modifier) }
                 }
             }
         }

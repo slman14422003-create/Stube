@@ -190,10 +190,10 @@ fun IosSwitch(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)? = null, mo
     val down by src.collectIsPressedAsState()
     val thumbW by animateDpAsState(
         if (down && onCheckedChange != null) 46.dp else 40.dp,
-        androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 700f), label = "swt"
+        NovaMotion.orSnap(androidx.compose.animation.core.spring(dampingRatio = 0.8f, stiffness = 700f)), label = "swt"
     )
     val moveSpec: androidx.compose.animation.core.AnimationSpec<Dp> =
-        if (Adaptive.level == 0) androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 420f) else tween(Adaptive.ms(200))
+        NovaMotion.orSnap(if (Adaptive.level == 0) androidx.compose.animation.core.spring(dampingRatio = 0.78f, stiffness = 420f) else tween(Adaptive.ms(200)))
     val x by animateDpAsState(if (checked) 64.dp - thumbW - 2.dp else 2.dp, moveSpec, label = "sw")
     val track by animateColorAsState(if (checked) ios.green else ios.fill2, tween(Adaptive.ms(250)), label = "swc")
     Box(

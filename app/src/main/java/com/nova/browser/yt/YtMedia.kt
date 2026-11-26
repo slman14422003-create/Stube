@@ -3,10 +3,8 @@ package com.nova.browser
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
-import java.net.URL
 
 /** سجل تشخيص تشغيل يوتيوب (يُعرض في الإعدادات ويمكن نسخه). */
 object YtLog {
@@ -34,7 +32,7 @@ object YtMedia {
     @Volatile private var lastPlayAt = 0L
     @Volatile private var lastHandoff = 0L
     var owner: BrowserTab? = null
-    private var artUrl = ""
+    @Volatile private var artUrl = ""
 
     fun control(a: String) {
         if (YtAudio.active) { YtAudio.control(a); return }
@@ -63,16 +61,12 @@ object YtMedia {
     fun loadArt(url: String) {
         if (url.isNotBlank() && url != artUrl && isTrustedArt(url)) {
             artUrl = url
-            Work.img {
-                runCatching {
-                    val c = URL(url).openConnection().apply { connectTimeout = 8000; readTimeout = 8000 }
-                    val bmp = c.getInputStream().use { BitmapFactory.decodeStream(it) }
-                    if (bmp != null) {
-                        val k = 512f / maxOf(bmp.width, bmp.height)
-                        art = if (k < 1f) Bitmap.createScaledBitmap(bmp, (bmp.width * k).toInt(), (bmp.height * k).toInt(), true) else bmp
-                        MediaService.instance?.refresh()
-                    }
-                }
+            // Shared with on-screen thumbnails: same cache and in-flight request
+            ImageLoader.fetch(url, 512, 512) { bmp ->
+                if (url != artUrl) return@fetch   // a newer track replaced this one
+                val k = 512f / maxOf(bmp.width, bmp.height)
+                art = if (k < 1f) Bitmap.createScaledBitmap(bmp, (bmp.width * k).toInt(), (bmp.height * k).toInt(), true) else bmp
+                MediaService.instance?.refresh()
             }
         }
     }

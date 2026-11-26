@@ -1,5 +1,12 @@
 package com.nova.browser
 
+import kotlinx.coroutines.delay
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.LaunchedEffect
 import android.animation.ValueAnimator
 import android.graphics.Canvas as GCanvas
 import android.graphics.ColorFilter
@@ -9,12 +16,6 @@ import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
 import android.view.animation.LinearInterpolator
 import android.widget.ImageView
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.VectorConverter
-import androidx.compose.animation.core.animateValue
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,16 +64,25 @@ private fun spokeAlpha(d: Int): Float = 1f - 0.88f * (d / (SPOKES - 1f)).pow(1.5
 /** مؤشر تحميل بنمط iPhone. اللون الافتراضي يتبع لون المحتوى الحالي فيناسب الفاتح والداكن. */
 @Composable
 fun NovaSpinner(modifier: Modifier = Modifier, size: Dp = 24.dp, color: Color = LocalContentColor.current) {
-    val t = rememberInfiniteTransition(label = "nova-spinner")
-    // قيمة صحيحة تتغيّر 12 مرة في الثانية فقط: لا إعادة رسم بلا داعٍ
-    val step by t.animateValue(0, SPOKES, Int.VectorConverter, infiniteRepeatable(tween(1000, easing = LinearEasing)), label = "step")
+    // Wakes only 12 times a second (not every vsync); stops in the background and when motion is reduced
+    val step = remember { mutableIntStateOf(0) }
+    val animate = NovaMotion.infiniteAllowed
+    val owner = LocalLifecycleOwner.current
+    LaunchedEffect(animate, owner) {
+        if (animate) owner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                delay(1000L / SPOKES)
+                step.intValue = (step.intValue + 1) % SPOKES
+            }
+        }
+    }
     Canvas(modifier.size(size)) {
         val r = this.size.minDimension / 2f
         val sw = r * 0.22f
         val inner = r * 0.5f + sw / 2f
         val outer = r - sw / 2f
         val c = center
-        val head = step % SPOKES
+        val head = step.intValue
         for (i in 0 until SPOKES) {
             val d = ((head - i) % SPOKES + SPOKES) % SPOKES
             val ang = Math.toRadians(i * 30.0 - 90.0)
@@ -127,6 +137,7 @@ class IosSpinnerDrawable(private val color: Int) : Drawable(), Animatable {
     private val anim = ValueAnimator.ofInt(0, SPOKES).apply {
         duration = 1000; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
         addUpdateListener {
+            if (Adaptive.level >= 1 || !Prefs.smoothAnim) { cancel(); return@addUpdateListener }
             val s = (it.animatedValue as Int) % SPOKES
             if (s != step) { step = s; invalidateSelf() }
         }
@@ -156,7 +167,8 @@ class IosSpinnerDrawable(private val color: Int) : Drawable(), Animatable {
     @Deprecated("Deprecated in Java")
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
-    override fun start() { if (!anim.isStarted) anim.start() }
+    // Static spokes when hot, saving power or with motion off
+    override fun start() { if (NovaMotion.infiniteAllowed && !anim.isStarted) anim.start() }
     override fun stop() { if (anim.isStarted) anim.cancel() }
     override fun isRunning(): Boolean = anim.isRunning
 

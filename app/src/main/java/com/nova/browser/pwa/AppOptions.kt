@@ -386,11 +386,11 @@ fun AppOptionsSheet(visible: Boolean, o: AppOpts, a: AppOptActions, onDismiss: (
                         detectVerticalDragGestures(
                             onDragEnd = {
                                 scope.launch {
-                                    if (drag.value > dismissPx) { onDismiss(); delay(260); drag.snapTo(0f) }
-                                    else drag.animateTo(0f, spring(stiffness = 500f))
+                                    if (drag.value > dismissPx) { onDismiss(); delay(Adaptive.ms(240) + 20L); drag.snapTo(0f) }
+                                    else drag.animateTo(0f, NovaMotion.orSnap(spring(stiffness = 500f)))
                                 }
                             },
-                            onDragCancel = { scope.launch { drag.animateTo(0f, spring(stiffness = 500f)) } },
+                            onDragCancel = { scope.launch { drag.animateTo(0f, NovaMotion.orSnap(spring(stiffness = 500f))) } },
                             onVerticalDrag = { change, dy ->
                                 change.consume()
                                 scope.launch { drag.snapTo((drag.value + dy).coerceAtLeast(0f)) }

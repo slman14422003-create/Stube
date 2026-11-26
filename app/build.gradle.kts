@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("androidx.baselineprofile")
 }
 
 // ---------- التوقيع: متغيرات بيئة (CI) أو ملف keystore.properties محلي (غير مرفوع) ----------
@@ -102,6 +103,19 @@ dependencies {
     implementation("androidx.metrics:metrics-performance:1.0.0")   // JankStats: رصد الإطارات البطيئة (يُفعَّل في نسخة debug فقط)
     debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")   // كشف تسرّب الذاكرة (Activity) أثناء التطوير فقط؛ لا يدخل نسخة الإصدار
     testImplementation("junit:junit:4.13.2")
+    baselineProfile(project(":benchmark"))   // profile producer; adds nothing to the APK
+}
+
+// Benchmark build types (created by the baselineprofile plugin): separate applicationId so seeded test data
+// never touches an installed Stube, plus the data seeding / panel opening activity.
+androidComponents {
+    onVariants { variant ->
+        if (variant.buildType == "benchmarkRelease" || variant.buildType == "nonMinifiedRelease") {
+            variant.applicationId.set("com.stube.app.benchmark")
+            variant.sources.kotlin?.addStaticSourceDirectory("src/bench/kotlin")
+            variant.sources.manifests.addStaticManifestFile("src/bench/AndroidManifest.xml")
+        }
+    }
 }
 
 val syncShieldList by tasks.registering(Copy::class) {

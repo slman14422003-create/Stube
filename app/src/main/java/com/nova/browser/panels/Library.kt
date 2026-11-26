@@ -20,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedScroll.nestedScroll
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -42,7 +43,7 @@ object Library {
     private var file: File? = null
     private val main = Handler(Looper.getMainLooper())
     private var saveQueued = false
-    @Volatile private var loaded = false
+    var loaded by mutableStateOf(false); private set
 
     fun init(c: Context) {
         if (file != null) return
@@ -189,9 +190,10 @@ fun LibraryScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
     val rows = remember(hs, tab) { if (tab == 1) buildRows(hs.take(1000)) else emptyList() }
     val timeFmt = remember { java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT) }
 
+    val ct = rememberCollapsingTitle()
     Surface(Modifier.fillMaxSize(), color = LocalIos.current.groupedBg) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            PanelTopBar(L("المكتبة"), Library.bookmarks.size.toString() + " " + L("المفضلة") + " • " + Library.history.size + " " + L("السجل"), onBack) {
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().nestedScroll(ct.connection)) {
+            PanelTopBar(L("المكتبة"), Library.bookmarks.size.toString() + " " + L("المفضلة") + " • " + Library.history.size + " " + L("السجل"), onBack, ct) {
                 PanelMenu { close ->
                     DropdownMenuItem(text = { Text(L("استيراد من كروم")) }, leadingIcon = { Icon(Icons.Default.KeyboardArrowDown, null) }, onClick = { close(); help = true })
                     if (Library.history.isNotEmpty()) DropdownMenuItem(text = { Text(L("مسح السجل")) }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { close(); confirmClear = true })
@@ -199,10 +201,15 @@ fun LibraryScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
             }
             PanelSegments(listOf(L("المفضلة") + " (${Library.bookmarks.size})", L("السجل") + " (${Library.history.size})", L("قائمة القراءة") + " (${Library.readingList.size})"), tab) { tab = it }
             PanelSearch(query, { query = it }, L("بحث"))
-            if (importing) NovaLoadingRow(L("جارٍ الاستيراد…"))
             val empty = when (tab) { 0 -> bms.isEmpty(); 2 -> rds.isEmpty(); else -> hs.isEmpty() }
             val emptyMod = Modifier.weight(1f).fillMaxWidth()
-            if (empty && q.isNotBlank()) {
+            if (importing && Library.loaded && !empty) SkeletonList(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), rows = 2, caption = L("جارٍ الاستيراد…"))
+            val skeletonMod = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp)
+            if (!Library.loaded) {
+                SkeletonList(skeletonMod)
+            } else if (importing && empty) {
+                SkeletonList(skeletonMod, caption = L("جارٍ الاستيراد…"))
+            } else if (empty && q.isNotBlank()) {
                 PanelEmpty(Icons.Default.Search, L("لا نتائج"), modifier = emptyMod)
             } else if (empty && tab == 0) {
                 PanelEmpty(Icons.Default.FavoriteBorder, L("لا توجد مفضلة بعد"), L("اضغط «المفضلة» في قائمة الخيارات لحفظ الصفحة هنا"), emptyMod)

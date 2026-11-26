@@ -108,6 +108,14 @@ object NovaMotion {
     val emphasized = CubicBezierEasing(0.32f, 0.72f, 0f, 1f)
     val emphasizedAccel = CubicBezierEasing(0.4f, 0f, 1f, 1f)
 
+    /** Endless loops run only at full performance, with app and system animations on. */
+    val infiniteAllowed: Boolean
+        get() = Adaptive.level == 0 && Adaptive.ms(100) > 0 && android.animation.ValueAnimator.areAnimatorsEnabled()
+
+    /** Springs have no duration to scale: snap when motion is off. */
+    fun <T> orSnap(spec: androidx.compose.animation.core.FiniteAnimationSpec<T>): androidx.compose.animation.core.FiniteAnimationSpec<T> =
+        if (Adaptive.ms(100) == 0) androidx.compose.animation.core.snap() else spec
+
     val panelEnter: EnterTransition
         get() = slideInVertically(tween(Adaptive.ms(420), easing = emphasized)) { it / 4 } +
             scaleIn(tween(Adaptive.ms(420), easing = emphasized), initialScale = 0.985f) +
@@ -127,6 +135,9 @@ object NovaMotion {
         return slideOutHorizontally(tween(Adaptive.ms(380), easing = emphasized)) { s * it / 4 } +
             fadeOut(tween(Adaptive.ms(200)))
     }
+
+    /** Bottom floating bar: one progress value drives both the bar and the space reserved for it. */
+    fun bottomBarSpec(entering: Boolean) = tween<Float>(Adaptive.ms(if (entering) 320 else 260), easing = emphasized)
 
     val barEnter: EnterTransition
         get() = slideInVertically(tween(Adaptive.ms(320), easing = emphasized)) { -it } +

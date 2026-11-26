@@ -1,6 +1,5 @@
 package com.nova.browser
 
-import android.graphics.BitmapFactory
 import android.os.Handler
 import android.os.Looper
 import org.json.JSONObject
@@ -14,6 +13,7 @@ object GeckoPage {
     private class Owner(val key: Any, val find: (String) -> BrowserTab?)
 
     private val main = Handler(Looper.getMainLooper())
+    private val iconFlights: MutableSet<String> = ConcurrentHashMap.newKeySet()
     private val owners = CopyOnWriteArrayList<Owner>()
     private val extTab = ConcurrentHashMap<Int, Int>()
     private val pending = ConcurrentHashMap<String, (String?) -> Unit>()
@@ -68,8 +68,10 @@ object GeckoPage {
     private fun loadIcon(pageUrl: String, iconUrl: String) {
         if (!safeIcon(iconUrl)) return
         val host = hostOf(pageUrl)
-        if (host.isBlank() || Favicons.get(host) != null) return
+        // One request per host at a time
+        if (host.isBlank() || Favicons.get(host) != null || !iconFlights.add(host)) return
         Work.img {
+            var posted = false
             runCatching {
                 val c = URL(iconUrl).openConnection() as HttpURLConnection
                 c.connectTimeout = 6000
@@ -80,9 +82,11 @@ object GeckoPage {
                 } finally {
                     c.disconnect()
                 }
-                val bmp = bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
-                if (bmp != null) main.post { Favicons.put(host, bmp) }
+                val bmp = bytes?.let { ImageLoader.decode(it, 48, 48) }
+                if (bmp != null) posted = main.post { Favicons.put(host, bmp); iconFlights.remove(host) }
+                Unit
             }
+            if (!posted) iconFlights.remove(host)
         }
     }
 

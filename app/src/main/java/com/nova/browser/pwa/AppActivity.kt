@@ -79,6 +79,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -635,8 +638,9 @@ class AppActivity : ComponentActivity() {
         if (optAwake) window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // حركة فتح/إغلاق ناعمة للتطبيق المثبّت بدل قفزة النظام الافتراضية
         runCatching {
-            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, R.anim.nova_panel_in, R.anim.nova_hold)
-            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, R.anim.nova_hold, R.anim.nova_panel_out)
+            val motion = Adaptive.ms(100) > 0
+            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, if (motion) R.anim.nova_panel_in else 0, if (motion) R.anim.nova_hold else 0)
+            overrideActivityTransition(OVERRIDE_TRANSITION_CLOSE, if (motion) R.anim.nova_hold else 0, if (motion) R.anim.nova_panel_out else 0)
         }
         tab.app = true
         tab.appHome = startUrl
@@ -694,9 +698,10 @@ class AppActivity : ComponentActivity() {
             if ((!tab.loading && tab.progress > 0f) || tab.progress >= 0.7f) splash = false
         }
         LaunchedEffect(Unit) {
-            delay(6000)
+            delay(3500)
             splash = false
         }
+        LaunchedEffect(Adaptive.level, Prefs.cap60, Prefs.smoothAnim) { HighRefresh.apply(this@AppActivity) }
         // العدّ التنازلي لمؤقّت النوم يُحدَّث فقط والورقة مفتوحة
         LaunchedEffect(optSheet, sleepEnd) {
             while (optSheet && sleepEnd > 0L) {
@@ -752,7 +757,12 @@ class AppActivity : ComponentActivity() {
         val safe = WindowInsets.systemBars.union(WindowInsets.displayCutout).let {
             if (gestureNav) it.only(androidx.compose.foundation.layout.WindowInsetsSides.Horizontal + androidx.compose.foundation.layout.WindowInsetsSides.Top) else it
         }
-        val miniOn = YtAudio.active && !inPip && !fullscreen
+        val miniShown = androidx.compose.animation.core.animateFloatAsState(
+            if (YtAudio.active) 1f else 0f, NovaMotion.bottomBarSpec(YtAudio.active), label = "mini"
+        )
+        // true from the first entrance frame until the exit animation ends
+        val miniVisible by remember { androidx.compose.runtime.derivedStateOf { miniShown.value > 0f } }
+        val miniOn = (YtAudio.active || miniVisible) && !inPip && !fullscreen
         val navDp = with(density) { navBottom.toDp() }
         val miniPad = if (miniOn) YT_MINI_BAR_HEIGHT + (if (gestureNav) navDp else 0.dp) else 0.dp
         val primaryInt = cs.primary.toArgb()
@@ -778,7 +788,12 @@ class AppActivity : ComponentActivity() {
         ) {
             key(tab.epoch) {
                 AndroidView(
-                    modifier = Modifier.fillMaxSize().padding(bottom = miniPad),
+                    // Read the animation in the layout phase: the page follows the pill without recomposing
+                    modifier = Modifier.fillMaxSize().layout { measurable, constraints ->
+                        val reserved = (miniPad.toPx() * miniShown.value).toInt()
+                        val page = measurable.measure(constraints.offset(vertical = -reserved))
+                        layout(constraints.maxWidth, constraints.maxHeight) { page.place(0, 0) }
+                    },
                     factory = { ctx -> geckoContainer(ctx, tab, handlers, primaryInt, bgInt, spinnerInt).also { (it as? SwipeRefreshLayout)?.isEnabled = optPull && !tab.yt } },
                     update = { v -> (v as? SwipeRefreshLayout)?.isEnabled = optPull }
                 )
@@ -802,7 +817,11 @@ class AppActivity : ComponentActivity() {
             }
 
             if (miniOn) {
-                YtMiniBar(Modifier.align(Alignment.BottomCenter), bottomInset = if (gestureNav) navDp else 0.dp) {
+                val slide = Modifier.align(Alignment.BottomCenter).graphicsLayer {
+                    translationY = (1f - miniShown.value) * size.height
+                    alpha = miniShown.value.coerceIn(0f, 1f)
+                }
+                YtMiniBar(slide, bottomInset = if (gestureNav) navDp else 0.dp) {
                     val u = YtAudio.watchUrl()
                     YtAudio.close()
                     tab.engine?.load(u)
@@ -838,7 +857,7 @@ class AppActivity : ComponentActivity() {
             // The touch target is a thin strip at the very top edge (14dp) where page buttons are not.
             var hint by remember { mutableStateOf(true) }
             LaunchedEffect(Unit) { delay(2800); hint = false }
-            val hintA by androidx.compose.animation.core.animateFloatAsState(if (hint || optSheet) 1f else 0f, androidx.compose.animation.core.tween(400), label = "handle")
+            val hintA = androidx.compose.animation.core.animateFloatAsState(if (hint || optSheet) 1f else 0f, androidx.compose.animation.core.tween(Adaptive.ms(400)), label = "handle")
             Box(
                 Modifier.align(Alignment.TopCenter)
                     .then(if (optImmersive) Modifier.windowInsetsPadding(WindowInsets.displayCutout) else Modifier.windowInsetsPadding(safe))
@@ -846,7 +865,7 @@ class AppActivity : ComponentActivity() {
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { optSheet = true },
                 contentAlignment = Alignment.TopCenter
             ) {
-                if (hintA > 0.01f) Box(Modifier.padding(top = 3.dp).width(30.dp).height(4.dp).clip(RoundedCornerShape(50)).background(cs.onBackground.copy(alpha = 0.3f * hintA)))
+                Box(Modifier.padding(top = 3.dp).width(30.dp).height(4.dp).graphicsLayer { alpha = hintA.value }.clip(RoundedCornerShape(50)).background(cs.onBackground.copy(alpha = 0.3f)))
             }
         }
         val onVideo = tab.yt && isYtVideo(tab.url)

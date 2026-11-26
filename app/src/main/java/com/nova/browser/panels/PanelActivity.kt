@@ -30,7 +30,7 @@ fun openPanel(a: Activity, kind: String) {
     val i = Intent(a, PanelActivity::class.java)
         .putExtra(PanelActivity.KIND, kind)
         .addFlags(Intent.FLAG_ACTIVITY_NO_USER_ACTION)   // لا يُعدّ ذلك «مغادرة» فلا تُفعَّل النافذة المنبثقة التلقائية للفيديو
-    a.startActivity(i, ActivityOptions.makeCustomAnimation(a, R.anim.nova_panel_in, R.anim.nova_hold).toBundle())
+    a.startActivity(i, ActivityOptions.makeCustomAnimation(a, if (Adaptive.ms(100) > 0) R.anim.nova_panel_in else 0, if (Adaptive.ms(100) > 0) R.anim.nova_hold else 0).toBundle())
 }
 
 /**
@@ -53,13 +53,14 @@ class PanelActivity : ComponentActivity() {
                 val f = WindowManager.LayoutParams.FLAG_SECURE
                 if (Prefs.secureScreen) window.setFlags(f, f) else window.clearFlags(f)
             }
+            LaunchedEffect(Adaptive.level, Prefs.cap60, Prefs.smoothAnim) { HighRefresh.apply(this@PanelActivity) }
             NovaTheme(this) { PanelHost(kind) { finish() } }
         }
     }
 
     override fun finish() {
         super.finish()
-        @Suppress("DEPRECATION") overridePendingTransition(R.anim.nova_hold, R.anim.nova_panel_out)
+        @Suppress("DEPRECATION") overridePendingTransition(if (Adaptive.ms(100) > 0) R.anim.nova_hold else 0, if (Adaptive.ms(100) > 0) R.anim.nova_panel_out else 0)
     }
 }
 

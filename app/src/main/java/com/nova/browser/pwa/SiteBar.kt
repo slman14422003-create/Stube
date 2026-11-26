@@ -102,10 +102,10 @@ fun SiteBar(
             if (onPip != null) GlyphButton(L("منبثق"), tap(onPip)) { c -> PipGlyph(c, Modifier.size(19.dp)) }
             if (onDownload != null) DownloadPill(L("تنزيل"), tap(onDownload))
             if (onPip == null && onDownload == null) {
-                val spin = if (loading && Adaptive.ms(100) > 0)
-                    rememberInfiniteTransition(label = "spin").animateFloat(0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Restart), label = "rot").value
-                else 0f
-                GlyphButton(L("تحديث"), tap(onReload), tonal = false) { c -> IosIcon(IosGlyph.Reload, ios.blue, 20.dp, Modifier.graphicsLayer { rotationZ = spin }) }
+                val spin = if (loading && NovaMotion.infiniteAllowed)
+                    rememberInfiniteTransition(label = "spin").animateFloat(0f, 360f, infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Restart), label = "rot")
+                else null
+                GlyphButton(L("تحديث"), tap(onReload), tonal = false) { c -> IosIcon(IosGlyph.Reload, ios.blue, 20.dp, Modifier.graphicsLayer { rotationZ = spin?.value ?: 0f }) }
                 GlyphButton(L("مشاركة"), tap(onShare), tonal = false) { c -> IosIcon(IosGlyph.Share, ios.blue, 21.dp) }
             }
         }

@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -28,15 +29,29 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
 
 @Composable
-fun PanelTopBar(title: String, subtitle: String? = null, onBack: () -> Unit, actions: @Composable RowScope.() -> Unit = {}) {
+fun PanelTopBar(
+    title: String, subtitle: String? = null, onBack: () -> Unit,
+    collapse: CollapsingTitle? = null, actions: @Composable RowScope.() -> Unit = {}
+) {
     val ios = LocalIos.current
     Column(Modifier.fillMaxWidth()) {
-        IosNavBar(null, onBack, null, actions)
-        IosLargeTitle(title)
-        if (subtitle != null) Text(
-            subtitle, style = MaterialTheme.typography.bodySmall, color = ios.label2,
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 6.dp), maxLines = 1, overflow = TextOverflow.Ellipsis
-        )
+        Box(Modifier.fillMaxWidth()) {
+            IosNavBar(null, onBack, null, actions)
+            if (collapse != null) Text(
+                title, Modifier.align(Alignment.Center).padding(horizontal = 96.dp).graphicsLayer { alpha = collapse.progress },
+                style = MaterialTheme.typography.titleMedium, color = ios.label, maxLines = 1, overflow = TextOverflow.Ellipsis
+            )
+        }
+        Box(Modifier.fillMaxWidth().then(if (collapse != null) Modifier.collapsing(collapse) else Modifier)) {
+            Column(Modifier.fillMaxWidth()) {
+                IosLargeTitle(title)
+                if (subtitle != null) Text(
+                    subtitle, style = MaterialTheme.typography.bodySmall, color = ios.label2,
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 6.dp), maxLines = 1, overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (collapse != null) Box(Modifier.fillMaxWidth().height(hairlineDp()).graphicsLayer { alpha = collapse.progress }.background(ios.separator))
     }
 }
 

@@ -48,6 +48,9 @@ object YtAudio {
         }
     }
 
+    /** Video that plays after this one, once resolved (not observable: read when [loading] changes). */
+    val nextVideoId: String? get() = nextUrl?.let { idOf(it) }
+
     /** Watch URL that resumes the video at the current position. */
     fun watchUrl(): String = "https://m.youtube.com/watch?v=$videoId&t=${posMs / 1000}s"
 

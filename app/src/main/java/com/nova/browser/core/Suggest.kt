@@ -167,7 +167,7 @@ fun SuggestionsPanel(query: String, onPick: (String) -> Unit, onFill: (String) -
     val ios = LocalIos.current
     val ctx = LocalContext.current
     Column(
-        Modifier.fillMaxWidth().background(ios.cell).animateContentSize()
+        Modifier.fillMaxWidth().background(ios.cell).then(if (Adaptive.ms(100) > 0) Modifier.animateContentSize() else Modifier)
     ) {
         LazyColumn(Modifier.heightIn(max = 320.dp), reverseLayout = true) {
             items(rows, key = { it.kind.toString() + (it.url ?: it.text) }) { s ->

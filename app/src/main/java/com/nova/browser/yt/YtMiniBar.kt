@@ -1,7 +1,15 @@
 package com.nova.browser
 
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,7 +27,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,20 +49,43 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
-val YT_MINI_BAR_HEIGHT = 58.dp
+private val PILL_HEIGHT = 58.dp
+private val PILL_SIDE = 12.dp
+private val PILL_TOP = 6.dp
+private val PILL_BOTTOM = 8.dp
+
+/** Total space the floating pill occupies (capsule + vertical margins), without the system inset. */
+val YT_MINI_BAR_HEIGHT = PILL_TOP + PILL_HEIGHT + PILL_BOTTOM
 
 private val YtRed = Color(0xFFFF0000)
 
+private fun thumbUrl(id: String) = "https://i.ytimg.com/vi/$id/mqdefault.jpg"
+
 @Composable
 fun YtMiniBar(modifier: Modifier = Modifier, bottomInset: androidx.compose.ui.unit.Dp = 0.dp, onOpen: () -> Unit) {
-    val cs = MaterialTheme.colorScheme
+    val ios = LocalIos.current
+    val haptics = rememberHaptics()
+    val shadow = if (ios.dark) Color(0x80000000) else Color(0x33000000)
     val scope = rememberCoroutineScope()
     val dx = remember { Animatable(0f) }
     val dy = remember { Animatable(0f) }
     val density = LocalDensity.current
     val dismissPx = with(density) { 96.dp.toPx() }
     val openPx = with(density) { 40.dp.toPx() }
-    val frac = if (YtAudio.durMs > 0) (YtAudio.posMs.toFloat() / YtAudio.durMs).coerceIn(0f, 1f) else 0f
+
+    // Preload the next track's thumbnail once the current one has resolved
+    LaunchedEffect(YtAudio.videoId, YtAudio.loading, Adaptive.level) {
+        if (YtAudio.loading || ImageLoader.prefetchCount(1) == 0) return@LaunchedEffect
+        val next = YtAudio.nextVideoId ?: return@LaunchedEffect
+        val w = with(density) { (42.dp * 16f / 9f).roundToPx() }
+        val h = with(density) { 42.dp.roundToPx() }
+        ImageLoader.prefetch(listOf(thumbUrl(next)), w, h)
+    }
+    // A new session must not inherit the off-screen position left by a swipe dismiss
+    LaunchedEffect(YtAudio.active) {
+        if (YtAudio.active) { dx.snapTo(0f); dy.snapTo(0f) }
+    }
+    val open = { if (YtAudio.active) { haptics.confirm(); onOpen() } }
 
     Column(
         modifier.fillMaxWidth().height(YT_MINI_BAR_HEIGHT + bottomInset)
@@ -64,7 +94,7 @@ fun YtMiniBar(modifier: Modifier = Modifier, bottomInset: androidx.compose.ui.un
                 translationY = dy.value
                 alpha = (1f - abs(dx.value) / (dismissPx * 2f)).coerceIn(0f, 1f)
             }
-            .background(cs.surfaceContainerHigh)
+            .padding(start = PILL_SIDE, end = PILL_SIDE, top = PILL_TOP, bottom = PILL_BOTTOM + bottomInset)
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -85,56 +115,71 @@ fun YtMiniBar(modifier: Modifier = Modifier, bottomInset: androidx.compose.ui.un
                         scope.launch {
                             when {
                                 axis == 1 && abs(dx.value) > dismissPx -> {
-                                    dx.animateTo(if (dx.value > 0) size.width.toFloat() else -size.width.toFloat(), tween(160))
+                                    dx.animateTo(if (dx.value > 0) size.width + PILL_SIDE.toPx() else -(size.width + PILL_SIDE.toPx()), tween(Adaptive.ms(160)))
+                                    haptics.confirm()
                                     YtAudio.close()
-                                    dx.snapTo(0f)
                                 }
                                 axis == 2 && dy.value < -openPx -> {
                                     dy.snapTo(0f)
-                                    onOpen()
+                                    open()
                                 }
                                 else -> {
-                                    launch { dx.animateTo(0f, tween(180)) }
-                                    launch { dy.animateTo(0f, tween(180)) }
+                                    launch { dx.animateTo(0f, tween(Adaptive.ms(180))) }
+                                    launch { dy.animateTo(0f, tween(Adaptive.ms(180))) }
                                 }
                             }
                         }
                     }
                 }
             }
-            .clickable { onOpen() }
+            .shadow(8.dp, IosShape.pill, ambientColor = shadow, spotColor = shadow)
+            .clip(IosShape.pill)
+            .background(if (ios.dark) ios.gray5 else ios.cell)
+            .border(hairlineDp(), ios.separator, IosShape.pill)
+            .clickable { open() }
     ) {
-        Box(Modifier.fillMaxWidth().height(2.dp).background(cs.onSurface.copy(alpha = 0.18f))) {
-            Box(Modifier.fillMaxWidth(frac).fillMaxHeight().background(YtRed))
-        }
-        Row(Modifier.fillMaxWidth().weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.fillMaxHeight().aspectRatio(16f / 9f).background(Color.Black)) {
-                NetImage("https://i.ytimg.com/vi/${YtAudio.videoId}/mqdefault.jpg", Modifier.fillMaxHeight().aspectRatio(16f / 9f))
+        // Position is read in the draw phase: the once-a-second tick redraws this line without recomposing the pill
+        Box(Modifier.fillMaxWidth().padding(horizontal = 30.dp).height(2.dp).background(ios.fill3).drawBehind {
+            val frac = if (YtAudio.durMs > 0) (YtAudio.posMs.toFloat() / YtAudio.durMs).coerceIn(0f, 1f) else 0f
+            val w = size.width * frac
+            val x = if (layoutDirection == LayoutDirection.Rtl) size.width - w else 0f
+            drawRect(YtRed, Offset(x, 0f), androidx.compose.ui.geometry.Size(w, size.height))
+        })
+        Row(Modifier.fillMaxWidth().weight(1f).padding(start = 8.dp, end = 8.dp, bottom = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.height(42.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(16.dp)).background(Color.Black)) {
+                NetImage(thumbUrl(YtAudio.videoId), Modifier.fillMaxSize())
             }
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Column(Modifier.weight(1f).padding(horizontal = 10.dp)) {
                 Text(
                     YtAudio.title.ifBlank { "YouTube" }, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = cs.onSurface
+                    style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = ios.label
                 )
                 if (YtAudio.author.isNotBlank()) Text(
                     YtAudio.author, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall, color = ios.label2
                 )
             }
-            MiniBtn(Modifier.clickable(enabled = !YtAudio.loading) { YtAudio.control(if (YtAudio.playing) "pause" else "play") }) {
-                if (YtAudio.loading) CircularProgressIndicator(Modifier.size(20.dp), color = cs.onSurface, strokeWidth = 2.dp)
-                else MiniIcon(if (YtAudio.playing) MiniGlyph.Pause else MiniGlyph.Play, cs.onSurface)
+            MiniBtn(enabled = !YtAudio.loading, onClick = {
+                haptics.toggle(!YtAudio.playing)
+                YtAudio.control(if (YtAudio.playing) "pause" else "play")
+            }) {
+                if (YtAudio.loading) NovaSpinner(size = 20.dp, color = ios.label)
+                else MiniIcon(if (YtAudio.playing) MiniGlyph.Pause else MiniGlyph.Play, ios.label)
             }
-            MiniBtn(Modifier.clickable { YtAudio.control("next") }) { MiniIcon(MiniGlyph.Next, cs.onSurface) }
-            MiniBtn(Modifier.clickable { YtAudio.close() }) { MiniIcon(MiniGlyph.Close, cs.onSurface) }
+            MiniBtn(onClick = { haptics.tick(); YtAudio.control("next") }) { MiniIcon(MiniGlyph.Next, ios.label) }
+            MiniBtn(onClick = { haptics.tick(); YtAudio.close() }) { MiniIcon(MiniGlyph.Close, ios.label) }
         }
-        androidx.compose.foundation.layout.Spacer(Modifier.height(bottomInset))
     }
 }
 
 @Composable
-private fun MiniBtn(modifier: Modifier, content: @Composable () -> Unit) {
-    Box(Modifier.size(44.dp).clip(CircleShape).then(modifier), contentAlignment = Alignment.Center) { content() }
+private fun MiniBtn(enabled: Boolean = true, onClick: () -> Unit, content: @Composable () -> Unit) {
+    val src = remember { MutableInteractionSource() }
+    Box(
+        Modifier.size(44.dp).pressScale(src, 0.88f).clip(CircleShape)
+            .clickable(interactionSource = src, indication = null, enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) { content() }
 }
 
 private enum class MiniGlyph { Play, Pause, Next, Close }

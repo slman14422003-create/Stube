@@ -3,6 +3,8 @@ package com.nova.browser
 import android.app.Activity
 import android.content.Context
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -14,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedScroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -71,13 +74,16 @@ fun PasswordsScreen(onBack: () -> Unit) {
     val q = query.trim()
     val list = Vault.items.filter { q.isBlank() || it.host.contains(q, true) || it.user.contains(q, true) }.sortedBy { it.host }
 
+    val ct = rememberCollapsingTitle()
     Surface(Modifier.fillMaxSize(), color = ios.groupedBg) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            PanelTopBar(L("كلمات المرور"), null, onBack) {
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().nestedScroll(ct.connection)) {
+            PanelTopBar(L("كلمات المرور"), null, onBack, ct) {
                 RoundBtn(onClick = { edit = Cred("", "", "", "", 0L) }) { IosIcon(IosGlyph.Plus, ios.blue, 24.dp) }
             }
             PanelSearch(query, { query = it }, L("بحث"))
-            if (list.isEmpty()) {
+            if (!Vault.loaded) {
+                SkeletonList(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 12.dp))
+            } else if (list.isEmpty()) {
                 PanelEmpty(Icons.Default.Lock, L("لا توجد كلمات مرور محفوظة"))
             } else {
                 LazyColumn(
@@ -85,7 +91,7 @@ fun PasswordsScreen(onBack: () -> Unit) {
                     contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
                     itemsIndexed(list, key = { _, c -> c.id }) { i, c ->
-                        ListRow(groupShape(i, list.size), c.host, c.user.ifBlank { "—" }, { sel = c; revealed = false }, modifier = Modifier.animateItem()) {
+                        ListRow(groupShape(i, list.size), c.host, c.user.ifBlank { "—" }, { sel = c; revealed = false }, modifier = if (Adaptive.ms(100) > 0) Modifier.animateItem() else Modifier) {
                             IconCircle { IosIcon(IosGlyph.Lock, ios.label2, 16.dp) }
                         }
                     }
